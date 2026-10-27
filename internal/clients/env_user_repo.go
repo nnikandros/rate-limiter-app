@@ -1,4 +1,4 @@
-package clientrepository
+package clients
 
 import (
 	"os"
