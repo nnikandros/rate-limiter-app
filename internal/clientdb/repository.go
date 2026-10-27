@@ -1,6 +1,7 @@
 package clientdb
 
 import (
+	"database/sql"
 	"log"
 	"rate-limiter-app/internal/clientdb/queries"
 	"rate-limiter-app/internal/config"
@@ -8,13 +9,18 @@ import (
 
 type Repository interface {
 	ListClients() []queries.Client
+	GetLimitByClient(clientId string) queries.GetRateLimitByClientRow
 }
 
 func New(cfg config.Config) Repository {
-	if cfg.UserRepository != "environment" {
-		log.Fatal("not implemented")
+
+	db, err := sql.Open("sqlite3", cfg.UserDbUrl)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	return envUsersRepository{}
+	// queries.New(db)
+
+	return envUsersRepository{q: queries.New(db)}
 
 }
