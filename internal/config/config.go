@@ -7,8 +7,10 @@ import (
 )
 
 type Config struct {
-	Host string `env:"RATE_LIMITER_HOST" envDefault:"127.0.0.1"`
-	Port string `env:"RATE_LIMITER_PORT" envDefault:"8000"`
+	Host           string `env:"RATE_LIMITER_HOST" envDefault:"127.0.0.1"`
+	Port           string `env:"RATE_LIMITER_PORT" envDefault:"8000"`
+	UserRepository string `env:"RATE_LIMITER_USER_REPO" envDefault:"environment"`
+	Users          string `env:"RATE_LIMITER_USERS"`
 }
 
 func New() (*Config, error) {
