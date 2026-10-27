@@ -3,6 +3,7 @@ package server
 import (
 	"net"
 	"net/http"
+	clientrepository "rate-limiter-app/internal/client-repository"
 	"rate-limiter-app/internal/config"
 	"time"
 )
@@ -13,17 +14,15 @@ type Server struct {
 	// db        database.Service
 	// templates *template.Template
 	// log       *slog.Logger
+	clientRepo clientrepository.ClientRepository
 }
 
 func New(cfg config.Config) *http.Server {
-	// port, _ := strconv.Atoi(os.Getenv("PORT"))
-	// port := os.Getenv("PORT")
-	// host := os.Getenv("HOST")
-
 	NewServer := &Server{
 		// db:        database.NewService(),
 		// templates: t,
 		// log:       getLogger(),
+		clientRepo: clientrepository.New(cfg),
 	}
 
 	// Declare Server config
