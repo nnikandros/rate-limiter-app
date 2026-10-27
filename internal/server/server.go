@@ -3,19 +3,14 @@ package server
 import (
 	"net"
 	"net/http"
-	"rate-limiter-app/internal/clients"
+	"rate-limiter-app/internal/clientdb"
 	"rate-limiter-app/internal/config"
 	ratelimiter "rate-limiter-app/internal/rate-limiter"
 	"time"
 )
 
 type Server struct {
-	// host string
-	// port string
-	// db        database.Service
-	// templates *template.Template
-	// log       *slog.Logger
-	cRepo       clients.Repository
+	cRepo       clientdb.Repository
 	rateLimiter ratelimiter.RateLimiter
 }
 
@@ -24,7 +19,7 @@ func New(cfg config.Config) *http.Server {
 		// db:        database.NewService(),
 		// templates: t,
 		// log:       getLogger(),
-		cRepo: clients.New(cfg),
+		cRepo: clientdb.New(cfg),
 		// Allow 5 requests/sec per client, with a burst of 10.
 		rateLimiter: ratelimiter.NewInMemRateLimiter(5, 10),
 	}

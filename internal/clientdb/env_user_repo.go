@@ -1,4 +1,4 @@
-package clients
+package clientdb
 
 import (
 	"os"

@@ -13,10 +13,10 @@ var ErrRateLimited = errors.New("rate limit exceeded")
 
 // InMemRateLimiter manages per-client rate limiters in memory.
 type InMemRateLimiter struct {
-	mu       sync.Mutex
-	clients  map[string]*rate.Limiter
-	rps      rate.Limit // requests per second
-	burst    int        // max burst size
+	mu      sync.Mutex
+	clients map[string]*rate.Limiter
+	rps     rate.Limit // requests per second
+	burst   int        // max burst size
 }
 
 // NewInMemRateLimiter creates a rate limiter that allows rps requests/sec
