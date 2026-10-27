@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os/signal"
+	"rate-limiter-app/internal/config"
+	"rate-limiter-app/internal/server"
 	"syscall"
 	"time"
 )
@@ -35,4 +38,23 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 
 func main() {
 
+	cfg, err := config.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	server := server.New(*cfg)
+
+	done := make(chan bool, 1)
+
+	go gracefulShutdown(server, done)
+
+	err = server.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
+		panic(fmt.Sprintf("http server error: %s", err))
+	}
+
+	// Wait for the graceful shutdown to complete
+	<-done
+	log.Println("Graceful shutdown complete.")
 }
