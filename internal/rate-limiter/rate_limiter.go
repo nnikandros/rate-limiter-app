@@ -1,12 +1,10 @@
 package ratelimiter
 
 import (
-	"context"
-
 	"golang.org/x/time/rate"
 )
 
 type RateLimiter interface {
-	Wait(context.Context) error
+	Allow(string) error
 	Limit() rate.Limit
 }

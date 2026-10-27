@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 )
 
@@ -48,6 +48,14 @@ func (s *Server) AuthEMiddleware(next http.Handler) http.Handler {
 
 func (s *Server) RateLimiterMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authZHeader := r.Header.Get("Authorization")
+		client := strings.TrimPrefix(authZHeader, "Bearer ")
+
+		if err := s.rateLimiter.Allow(client); err != nil {
+			http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
