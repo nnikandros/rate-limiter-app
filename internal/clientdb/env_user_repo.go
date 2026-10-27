@@ -2,15 +2,15 @@ package clientdb
 
 import (
 	"os"
-	"strings"
+	"rate-limiter-app/internal/clientdb/queries"
 )
 
 var users = os.Getenv("RATE_LIMITER_USERS")
 
 type envUsersRepository struct{}
 
-func (e envUsersRepository) ListClients() []string {
+func (e envUsersRepository) ListClients() []queries.Client {
 
-	return strings.Split(users, ",")
+	return nil
 
 }

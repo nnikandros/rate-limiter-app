@@ -1,2 +1,6 @@
 -- name: GetAllClients :many
-SELECT client_id, rps, burst FROM clients;
+SELECT * FROM clients;
+
+-- name: GetRateLimitByClient :one
+SELECT rps,burst FROM clients
+WHERE client_id=?;

@@ -10,25 +10,24 @@ import (
 )
 
 const getAllClients = `-- name: GetAllClients :many
-SELECT client_id, rps, burst FROM clients
+SELECT id, client_id, rps, burst FROM clients
 `
 
-type GetAllClientsRow struct {
-	ClientID string  `json:"client_id"`
-	Rps      float64 `json:"rps"`
-	Burst    int64   `json:"burst"`
-}
-
-func (q *Queries) GetAllClients(ctx context.Context) ([]GetAllClientsRow, error) {
+func (q *Queries) GetAllClients(ctx context.Context) ([]Client, error) {
 	rows, err := q.db.QueryContext(ctx, getAllClients)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetAllClientsRow
+	var items []Client
 	for rows.Next() {
-		var i GetAllClientsRow
-		if err := rows.Scan(&i.ClientID, &i.Rps, &i.Burst); err != nil {
+		var i Client
+		if err := rows.Scan(
+			&i.ID,
+			&i.ClientID,
+			&i.Rps,
+			&i.Burst,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -40,4 +39,21 @@ func (q *Queries) GetAllClients(ctx context.Context) ([]GetAllClientsRow, error)
 		return nil, err
 	}
 	return items, nil
+}
+
+const getRateLimitByClient = `-- name: GetRateLimitByClient :one
+SELECT rps,burst FROM clients
+WHERE client_id=?
+`
+
+type GetRateLimitByClientRow struct {
+	Rps   float64 `json:"rps"`
+	Burst int64   `json:"burst"`
+}
+
+func (q *Queries) GetRateLimitByClient(ctx context.Context, clientID string) (GetRateLimitByClientRow, error) {
+	row := q.db.QueryRowContext(ctx, getRateLimitByClient, clientID)
+	var i GetRateLimitByClientRow
+	err := row.Scan(&i.Rps, &i.Burst)
+	return i, err
 }
