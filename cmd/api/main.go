@@ -12,6 +12,8 @@ import (
 	"rate-limiter-app/internal/server"
 	"syscall"
 	"time"
+
+	_ "modernc.org/sqlite"
 )
 
 func gracefulShutdown(apiServer *http.Server, done chan bool) {

@@ -9,8 +9,6 @@ import (
 	ratelimiter "rate-limiter-app/internal/rate-limiter"
 	"sync"
 	"time"
-
-	_ "modernc.org/sqlite"
 )
 
 type Server struct {
