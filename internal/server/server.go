@@ -1,23 +1,25 @@
 package server
 
 import (
+	"database/sql"
 	"log"
 	"net"
 	"net/http"
 	"rate-limiter-app/internal/clientdb"
-	"rate-limiter-app/internal/config"
 	ratelimiter "rate-limiter-app/internal/rate-limiter"
 	"sync"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	_ "modernc.org/sqlite"
 )
 
 type Server struct {
-	cRepo *clientdb.MockRepository
+	host       string
+	port       string
+	clientRepo clientdb.Repository
 
-	// redis is the shared client used to back the "redis" strategy.
-	redis redis.Cmdable
+	// db is the shared SQLite handle backing the "sqlite" strategy.
+	dbRateLimiter *sql.DB
 
 	// limiters caches a per-client RateLimiter so each client keeps its own
 	// token-bucket state across requests. The chosen strategy and the client's
@@ -26,26 +28,17 @@ type Server struct {
 	limiters map[string]ratelimiter.RateLimiter
 }
 
-func New(cfg config.Config) *http.Server {
-	cRepo, err := clientdb.NewMockRepository(cfg.MockDbPath)
-	if err != nil {
-		log.Fatalf("load client config: %v", err)
-	}
-
-	opts, err := redis.ParseURL(cfg.RedisUrl)
-	if err != nil {
-		log.Fatalf("parse redis url: %v", err)
-	}
+func New(host, port string, clientRepo clientdb.Repository, dbRateLimiter *sql.DB) *http.Server {
 
 	NewServer := &Server{
-		cRepo:    cRepo,
-		redis:    redis.NewClient(opts),
-		limiters: make(map[string]ratelimiter.RateLimiter),
+		clientRepo:    clientRepo,
+		dbRateLimiter: dbRateLimiter,
+		limiters:      make(map[string]ratelimiter.RateLimiter),
 	}
 
 	// Declare Server config
 	server := &http.Server{
-		Addr:         net.JoinHostPort(cfg.Host, cfg.Port),
+		Addr:         net.JoinHostPort(host, port),
 		Handler:      NewServer.RegisterRoutes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
@@ -56,7 +49,7 @@ func New(cfg config.Config) *http.Server {
 }
 
 // limiterFor returns the RateLimiter for a client, constructing it on first use
-// based on the client's configured strategy ("inmem" or "redis") and its
+// based on the client's configured strategy ("inmem" or "sqlite") and its
 // rps/burst. Returns false if the client has no configuration.
 func (s *Server) limiterFor(clientID string) (ratelimiter.RateLimiter, bool) {
 	s.mu.Lock()
@@ -66,17 +59,22 @@ func (s *Server) limiterFor(clientID string) (ratelimiter.RateLimiter, bool) {
 		return rl, true
 	}
 
-	cfg, ok := s.cRepo.GetClientConfig(clientID)
+	clientCfg, ok := s.clientRepo.GetClientConfig(clientID)
 	if !ok {
 		return nil, false
 	}
 
 	var rl ratelimiter.RateLimiter
-	switch cfg.Store {
-	case "redis":
-		rl = ratelimiter.NewRedisRateLimiter(s.redis, cfg.Rps, cfg.Burst)
+	switch clientCfg.Store {
+	case "sqlite":
+		sqliteRl, err := ratelimiter.NewSQLiteRateLimiter(s.dbRateLimiter, clientCfg.Rps, clientCfg.Burst)
+		if err != nil {
+			log.Printf("sqlite limiter for %q: %v", clientID, err)
+			return nil, false
+		}
+		rl = sqliteRl
 	default: // "inmem" and anything else fall back to in-memory
-		rl = ratelimiter.NewInMemRateLimiter(cfg.Rps, cfg.Burst)
+		rl = ratelimiter.NewInMemRateLimiter(clientCfg.Rps, clientCfg.Burst)
 	}
 
 	s.limiters[clientID] = rl

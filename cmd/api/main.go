@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os/signal"
+	"rate-limiter-app/internal/clientdb"
 	"rate-limiter-app/internal/config"
 	"rate-limiter-app/internal/server"
 	"syscall"
@@ -43,7 +45,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	server := server.New(*cfg)
+	cRepo, err := clientdb.NewMockRepository(cfg.MockDbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dbRateLimiter, err := sql.Open("sqlite", cfg.SqliteDbPath)
+	if err != nil {
+		log.Fatalf("open sqlite: %v", err)
+	}
+
+	server := server.New(cfg.Host, cfg.Port, cRepo, dbRateLimiter)
 
 	done := make(chan bool, 1)
 

@@ -1,24 +1,34 @@
 package server
 
 import (
+	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"rate-limiter-app/internal/clientdb"
 	ratelimiter "rate-limiter-app/internal/rate-limiter"
 	"testing"
+
+	_ "modernc.org/sqlite"
 )
 
-// newTestServer builds a Server using the repo-backed config but without a real
-// Redis connection, so only the in-memory strategy is exercised over HTTP.
+// newTestServer builds a Server using the repo-backed config with an in-memory
+// SQLite database backing the "sqlite" strategy.
 func newTestServer(t *testing.T) *Server {
 	t.Helper()
 	repo, err := clientdb.NewMockRepository("../../mock_db.json")
 	if err != nil {
 		t.Fatalf("load mock repo: %v", err)
 	}
+	db, err := sql.Open("sqlite", "file::memory:?cache=shared")
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	db.SetMaxOpenConns(1)
+	t.Cleanup(func() { _ = db.Close() })
 	return &Server{
-		cRepo:    repo,
-		limiters: make(map[string]ratelimiter.RateLimiter),
+		clientRepo:    repo,
+		dbRateLimiter: db,
+		limiters:      make(map[string]ratelimiter.RateLimiter),
 	}
 }
 
@@ -40,14 +50,13 @@ func TestLimiterForSelectsStrategy(t *testing.T) {
 		t.Fatal("expected cached limiter instance for alice")
 	}
 
-	// bob -> redis
-	s.redis = nil // not used until Allow is called
+	// bob -> sqlite
 	rlBob, ok := s.limiterFor("bob")
 	if !ok {
 		t.Fatal("expected bob to be found")
 	}
-	if _, isRedis := rlBob.(*ratelimiter.RedisRateLimiter); !isRedis {
-		t.Fatalf("expected bob to use RedisRateLimiter, got %T", rlBob)
+	if _, isSQLite := rlBob.(*ratelimiter.SQLiteRateLimiter); !isSQLite {
+		t.Fatalf("expected bob to use SQLiteRateLimiter, got %T", rlBob)
 	}
 
 	// unknown client

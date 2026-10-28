@@ -42,7 +42,7 @@ func (s *Server) AuthEMiddleware(next http.Handler) http.Handler {
 		client := strings.TrimPrefix(authZHeader, "Bearer ")
 
 		// A client is authenticated if it exists in the client config.
-		if _, ok := s.cRepo.GetClientConfig(client); !ok {
+		if _, ok := s.clientRepo.GetClientConfig(client); !ok {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
@@ -56,7 +56,7 @@ func (s *Server) RateLimiterMiddleware(next http.Handler) http.Handler {
 		authZHeader := r.Header.Get("Authorization")
 		client := strings.TrimPrefix(authZHeader, "Bearer ")
 
-		// Select the per-client strategy (inmem or redis) from config.
+		// Select the per-client strategy (inmem or sqlite) from config.
 		limiter, ok := s.limiterFor(client)
 		if !ok {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)

@@ -11,8 +11,8 @@ type Config struct {
 	Port           string `env:"RATE_LIMITER_PORT" envDefault:"8000"`
 	UserRepository string `env:"RATE_LIMITER_USER_REPO" envDefault:"environment"`
 	// UserDbUrl      string `env:"RATE_LIMITER_USER_DB_URL"`
-	RedisUrl   string `env:"RATE_LIMITER_REDIS_URL" envDefault:"redis://127.0.0.1:6379/0"`
-	MockDbPath string `env:"RATE_LIMITER_MOCK_DB" envDefault:"mock_db.json"`
+	SqliteDbPath string `env:"RATE_LIMITER_SQLITE_DB" envDefault:"ratelimiter.db"`
+	MockDbPath   string `env:"RATE_LIMITER_MOCK_DB" envDefault:"mock_db.json"`
 }
 
 func New() (*Config, error) {
