@@ -1,0 +1,5 @@
+[
+  { "client_id": "alice", "rps": 5, "burst": 10, "store": "inmem" },
+  { "client_id": "bob", "rps": 10, "burst": 20, "store": "redis" },
+  { "client_id": "trudy", "rps": 1, "burst": 3, "store": "inmem" }
+]

@@ -11,7 +11,11 @@ import (
 )
 
 type SuccessResponse struct {
-	Success bool
+	Success bool `json:"success"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
 }
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -37,7 +41,8 @@ func (s *Server) AuthEMiddleware(next http.Handler) http.Handler {
 		authZHeader := r.Header.Get("Authorization")
 		client := strings.TrimPrefix(authZHeader, "Bearer ")
 
-		if client != "client-1" {
+		// A client is authenticated if it exists in the client config.
+		if _, ok := s.cRepo.GetClientConfig(client); !ok {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
@@ -51,8 +56,18 @@ func (s *Server) RateLimiterMiddleware(next http.Handler) http.Handler {
 		authZHeader := r.Header.Get("Authorization")
 		client := strings.TrimPrefix(authZHeader, "Bearer ")
 
-		if err := s.rateLimiter.Allow(client); err != nil {
-			http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
+		// Select the per-client strategy (inmem or redis) from config.
+		limiter, ok := s.limiterFor(client)
+		if !ok {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		if err := limiter.Allow(client); err != nil {
+			w.WriteHeader(http.StatusTooManyRequests)
+			e := ErrorResponse{Error: "rate limit exceeded"}
+			b, _ := json.Marshal(e)
+			_, _ = w.Write(b)
 			return
 		}
 
@@ -63,16 +78,9 @@ func (s *Server) RateLimiterMiddleware(next http.Handler) http.Handler {
 func (s *Server) successHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	jsonResp := map[string]bool{"success": true}
+	jsonResp := SuccessResponse{Success: true}
 	b, _ := json.Marshal(jsonResp)
 
 	_, _ = w.Write(b)
-
-	// resp := SuccessResponse{Success: true}
-	// err := json.NewEncoder(w).Encode(resp)
-
-	// if err != nil {
-	// 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-	// }
 
 }
