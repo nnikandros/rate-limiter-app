@@ -12,6 +12,16 @@ docker run -d --name rl-test -p "127.0.0.1:8080:8000" rate-limiter-app:test
 ```
 This will run the application and will be accessible in http://localhost:8000
 
+## Make
+After cloning the repo execute
+```bash
+make build
+```
+Then just 
+```bash
+./rate-limiter
+```
+
 ## As an executable from the GitHub Realeases
 Download the executable and just execute it. Make sure the mock_db.json is in the same directory. The target architecture is x86_64. The default environment variables will lunch it in localhost:8000. To change it 
 set
