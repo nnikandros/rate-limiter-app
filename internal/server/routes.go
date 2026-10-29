@@ -41,7 +41,6 @@ func (s *Server) AuthEMiddleware(next http.Handler) http.Handler {
 		authZHeader := r.Header.Get("Authorization")
 		client := strings.TrimPrefix(authZHeader, "Bearer ")
 
-		// A client is authenticated if it exists in the client config.
 		if _, ok := s.clientRepo.GetClientConfig(client); !ok {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return

@@ -16,7 +16,6 @@ type Server struct {
 	port       string
 	clientRepo clientdb.Repository
 
-	// db is the shared SQLite handle backing the "sqlite" strategy.
 	dbRateLimiter *sql.DB
 
 	// limiters caches a per-client RateLimiter so each client keeps its own
